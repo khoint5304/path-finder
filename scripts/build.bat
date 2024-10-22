@@ -18,6 +18,10 @@ if "%1"=="debug" (
     echo Building normally
 )
 
-set command=g++ %params% %root%/src/main.cpp -o %root%/build/main.exe
+set command=g++ %params% -D A_STAR %root%/src/main.cpp -o %root%/build/a_star.exe
+echo Running "%command%"
+%command%
+
+set command=g++ %params% -D BFS %root%/src/main.cpp -o %root%/build/bfs.exe
 echo Running "%command%"
 %command%

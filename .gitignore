@@ -4,6 +4,6 @@
 .vscode/
 cache/
 build/
-graphs/
+data/
 
 run.bat

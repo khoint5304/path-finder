@@ -58,42 +58,65 @@ public:
 
 std::vector<std::size_t> search()
 {
-    std::vector<bool> discovered(n);
-    std::set<std::shared_ptr<search_pack>> queue;
+    std::vector<double> distances(n, std::numeric_limits<double>::infinity());
+    std::size_t improvements = 0;
+    std::shared_ptr<search_pack> result_ptr;
 
+#ifdef A_STAR
+    std::set<std::shared_ptr<search_pack>> queue;
     queue.insert(std::make_shared<search_pack>(source, nullptr, 0.0, haversine(source, destination)));
+#else
+    std::deque<std::shared_ptr<search_pack>> queue;
+    queue.push_back(std::make_shared<search_pack>(source, nullptr, 0.0, 0.0));
+#endif
 
     while (!queue.empty())
     {
+#ifdef A_STAR
         auto pack_ptr = *queue.begin();
         queue.erase(queue.begin());
+#else
+        auto pack_ptr = queue.front();
+        queue.pop_front();
+#endif
 
-        if (!discovered[pack_ptr->index])
+        if (pack_ptr->distance_to_src < distances[pack_ptr->index])
         {
-            discovered[pack_ptr->index] = true;
+            distances[pack_ptr->index] = pack_ptr->distance_to_src;
             if (pack_ptr->index == destination)
             {
-                std::vector<std::size_t> result;
-                auto ptr = pack_ptr;
-                while (ptr != nullptr)
+                result_ptr = pack_ptr;
+                if (++improvements == 20)
                 {
-                    result.push_back(ptr->index);
-                    ptr = ptr->parent;
+                    break;
                 }
-
-                std::reverse(result.begin(), result.end());
-                std::cerr << "Found route with distance = " << pack_ptr->distance_to_src << " km" << std::endl;
-                return result;
             }
 
             for (auto &[neighbor, distance] : neighbors[pack_ptr->index])
             {
+#ifdef A_STAR
                 queue.insert(std::make_shared<search_pack>(neighbor, pack_ptr, pack_ptr->distance_to_src + distance, haversine(neighbor, destination)));
+#else
+                queue.push_back(std::make_shared<search_pack>(neighbor, pack_ptr, pack_ptr->distance_to_src + distance, 0.0));
+#endif
             }
         }
     }
 
-    return std::vector<std::size_t>{source};
+    if (result_ptr == nullptr)
+    {
+        return std::vector<std::size_t>{source};
+    }
+
+    std::vector<std::size_t> result;
+    while (result_ptr != nullptr)
+    {
+        result.push_back(result_ptr->index);
+        result_ptr = result_ptr->parent;
+    }
+
+    std::reverse(result.begin(), result.end());
+    return result;
 }
 
 int main()

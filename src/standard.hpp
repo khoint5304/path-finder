@@ -5,6 +5,7 @@
 #include <cassert>
 #include <chrono>
 #include <cmath>
+#include <deque>
 #include <fstream>
 #include <functional>
 #include <iomanip>
