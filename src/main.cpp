@@ -86,7 +86,7 @@ std::vector<std::size_t> search()
             if (pack_ptr->index == destination)
             {
                 result_ptr = pack_ptr;
-                if (++improvements == 20)
+                if (++improvements == 5)
                 {
                     break;
                 }
@@ -107,6 +107,8 @@ std::vector<std::size_t> search()
     {
         return std::vector<std::size_t>{source};
     }
+
+    std::cerr << "Found route with distance = " << result_ptr->distance_to_src << " km" << std::endl;
 
     std::vector<std::size_t> result;
     while (result_ptr != nullptr)
