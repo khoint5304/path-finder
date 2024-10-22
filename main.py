@@ -46,16 +46,22 @@ webbrowser.open(f"file://{map_path}")
 
 
 while True:
-    print("Copy and paste coordinates of the source and destination points (Ctrl-C to terminate):")
-    source_lon = float(input("Source longitude: "))
-    source_lat = float(input("Source latitude: "))
-    source_index = osmnx.nearest_nodes(graph, source_lon, source_lat)
-    print("Got source", graph.nodes[source_index])
+    print("\nCopy and paste coordinates of the source and destination points (Ctrl-C to terminate):")
 
-    destination_lon = float(input("Destination longitude: "))
-    destination_lat = float(input("Destination latitude: "))
-    destination_index = osmnx.nearest_nodes(graph, destination_lon, destination_lat)
-    print("Got destination", graph.nodes[destination_index])
+    try:
+        source_lon = float(input("Source longitude: "))
+        source_lat = float(input("Source latitude: "))
+        source_index = osmnx.nearest_nodes(graph, source_lon, source_lat)
+        print("Got source", graph.nodes[source_index])
+
+        destination_lon = float(input("Destination longitude: "))
+        destination_lat = float(input("Destination latitude: "))
+        destination_index = osmnx.nearest_nodes(graph, destination_lon, destination_lat)
+        print("Got destination", graph.nodes[destination_index])
+
+    except KeyboardInterrupt:
+        print("Terminated")
+        break
 
     if source_index == destination_index:
         warnings.warn("Source and destination are the same!")

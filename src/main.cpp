@@ -9,9 +9,8 @@ double convert(double angle)
     return angle * M_PI / 180.0;
 }
 
-double haversine(
-    double lon1, double lat1,
-    double lon2, double lat2)
+// https://stackoverflow.com/a/26447032
+double haversine(double lon1, double lat1, double lon2, double lat2)
 {
     static const double EARTH_RADIUS = 6371.0;
 
@@ -19,13 +18,12 @@ double haversine(
     double dlat = convert(lat2 - lat1);
 
     double a = std::pow(std::sin(dlat / 2.0), 2) + std::cos(convert(lat1)) * std::cos(convert(lat2)) * std::pow(std::sin(dlon / 2.0), 2);
-    double c = 2.0 * std::atan2(std::sqrt(a), std::sqrt(1.0 - a));
+    double b = 2.0 * std::asin(std::sqrt(a));
 
-    return EARTH_RADIUS * c;
+    return EARTH_RADIUS * b;
 }
 
-double haversine(
-    std::size_t first, std::size_t second)
+double haversine(std::size_t first, std::size_t second)
 {
     return haversine(points[first].first, points[first].second, points[second].first, points[second].second);
 }
@@ -36,23 +34,23 @@ public:
     const std::size_t index;
     const std::shared_ptr<search_pack> parent;
     const double distance_to_src;
-    const double estimated_to_dest;
+    const double lower_bound_to_dest;
 
     search_pack(
         std::size_t index,
         std::shared_ptr<search_pack> parent,
         double distance_to_src,
-        double estimated_to_dest)
+        double lower_bound_to_dest)
         : index(index),
           parent(parent),
           distance_to_src(distance_to_src),
-          estimated_to_dest(estimated_to_dest)
+          lower_bound_to_dest(lower_bound_to_dest)
     {
     }
 
     bool operator<(const search_pack &other) const
     {
-        return distance_to_src + estimated_to_dest < other.distance_to_src + other.estimated_to_dest;
+        return distance_to_src + lower_bound_to_dest < other.distance_to_src + other.lower_bound_to_dest;
     }
 };
 
@@ -62,12 +60,14 @@ std::vector<std::size_t> search()
     std::size_t improvements = 0;
     std::shared_ptr<search_pack> result_ptr;
 
+    auto initial_ptr = std::make_shared<search_pack>(source, nullptr, 0.0, haversine(source, destination));
+
 #ifdef A_STAR
     std::set<std::shared_ptr<search_pack>> queue;
-    queue.insert(std::make_shared<search_pack>(source, nullptr, 0.0, haversine(source, destination)));
+    queue.insert(initial_ptr);
 #else
     std::deque<std::shared_ptr<search_pack>> queue;
-    queue.push_back(std::make_shared<search_pack>(source, nullptr, 0.0, 0.0));
+    queue.push_back(initial_ptr);
 #endif
 
     while (!queue.empty())
@@ -86,19 +86,29 @@ std::vector<std::size_t> search()
             if (pack_ptr->index == destination)
             {
                 result_ptr = pack_ptr;
-                if (++improvements == 5)
+                if (++improvements == 10)
                 {
                     break;
                 }
             }
-
-            for (auto &[neighbor, distance] : neighbors[pack_ptr->index])
+            else
             {
+                // Branch-and-bound elimination
+                if (result_ptr != nullptr && pack_ptr->distance_to_src + pack_ptr->lower_bound_to_dest > result_ptr->distance_to_src)
+                {
+                    continue;
+                }
+
+                for (auto &[neighbor, distance] : neighbors[pack_ptr->index])
+                {
+                    auto next_ptr = std::make_shared<search_pack>(neighbor, pack_ptr, pack_ptr->distance_to_src + distance, haversine(neighbor, destination));
+
 #ifdef A_STAR
-                queue.insert(std::make_shared<search_pack>(neighbor, pack_ptr, pack_ptr->distance_to_src + distance, haversine(neighbor, destination)));
+                    queue.insert(next_ptr);
 #else
-                queue.push_back(std::make_shared<search_pack>(neighbor, pack_ptr, pack_ptr->distance_to_src + distance, 0.0));
+                    queue.push_back(next_ptr);
 #endif
+                }
             }
         }
     }
@@ -153,7 +163,7 @@ int main()
         std::size_t v_index = index_mapping[v];
 
         double distance = haversine(points[u_index].first, points[u_index].second, points[v_index].first, points[v_index].second);
-        neighbors[u_index][v_index] = neighbors[v_index][u_index] = distance;
+        neighbors[u_index][v_index] = distance;
     }
 
     auto path = search();
