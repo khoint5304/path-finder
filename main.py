@@ -5,7 +5,6 @@ import io
 import itertools
 import os
 import subprocess
-import tempfile
 import warnings
 import webbrowser
 from os.path import join
@@ -16,7 +15,11 @@ import osmnx
 from osmnx import geocoder
 
 
-root = Path(__file__).parent
+root = Path(__file__).parent.resolve()
+data = root / "data"
+data.mkdir(parents=True, exist_ok=True)
+
+
 place = input("Enter search location: ")
 print("Loading map data...")
 
@@ -40,7 +43,7 @@ selection_map.add_child(folium.GeoJson(gdf.unary_union))
 selection_map.add_child(folium.LatLngPopup())
 
 
-map_path = join(tempfile.gettempdir(), f"map-{os.getpid()}.html")
+map_path = data / f"map-{os.getpid()}.html"
 selection_map.save(map_path)
 webbrowser.open(f"file://{map_path}")
 
@@ -60,7 +63,7 @@ while True:
         print("Got destination", graph.nodes[destination_index])
 
     except KeyboardInterrupt:
-        print("Terminated")
+        print("\nTerminated")
         break
 
     if source_index == destination_index:
@@ -149,7 +152,11 @@ while True:
 
             route_map.add_child(folium.PolyLine(locations=coordinates, tooltip=exec, color=next(colors), weight=5))
 
-    route_path = join(tempfile.gettempdir(), f"route-{os.getpid()}.html")
+            # graph_route_path = data / f"route-{process.pid}.png"
+            # osmnx.plot_graph_route(graph, route, filepath=graph_route_path, save=True, show=False, close=True)
+            # print(f"Saved route graph to {graph_route_path}")
+
+    route_path = data / f"route-{os.getpid()}.html"
     route_map.save(route_path)
 
     print("Displaying route map")
