@@ -73,9 +73,11 @@ for u, v, *_ in graph.edges(data=True):
 
 
 root = Path(__file__).parent
-executable = root / "build" / "main.exe"
+executable = root.joinpath("build", "main.exe").resolve()
+print(f"Starting subprocess \"{executable}\"")
+
 process = subprocess.Popen(
-    [executable.resolve()],
+    [executable],
     stdin=subprocess.PIPE,
     stdout=subprocess.PIPE,
     stderr=subprocess.PIPE,
