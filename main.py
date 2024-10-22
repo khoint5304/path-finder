@@ -7,7 +7,6 @@ import os
 import subprocess
 import warnings
 import webbrowser
-from os.path import join
 from pathlib import Path
 
 import folium
@@ -24,8 +23,17 @@ place = input("Enter search location: ")
 print("Loading map data...")
 
 
-graph = osmnx.graph_from_place(place, network_type="drive")
 gdf = geocoder.geocode_to_gdf(place)
+
+# Load graph from local file if possible
+graph_path = data / f"{gdf['osm_id'][0]}.graphml"
+try:
+    graph = osmnx.load_graphml(graph_path)
+except FileNotFoundError:
+    graph = osmnx.graph_from_place(place, network_type="drive")
+    osmnx.save_graphml(graph, graph_path)
+else:
+    print(f"Restored data from {graph_path}")
 
 
 coordinates = [
