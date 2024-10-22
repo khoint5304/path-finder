@@ -8,7 +8,7 @@ echo "Got root of directory: $ROOT_DIR"
 mkdir -p $ROOT_DIR/build
 
 echo "Building main.exe"
-params="-Wall -I src/include -std=c++20"
+params="-Wall -std=c++20"
 if [ "$1" == "debug" ]
 then
     params="$params -g -D DEBUG"
