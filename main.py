@@ -23,14 +23,16 @@ from folium.elements import EventHandler, JsCode  # type: ignore
 
 
 root = Path(__file__).parent.resolve()
+build = root / "build"
 data = root / "data"
 scripts = root / "scripts"
-build = root / "build"
+static = root / "static"
 data.mkdir(parents=True, exist_ok=True)
 
 
 app = FastAPI(title="Path finder")
 app.mount("/data", StaticFiles(directory=data))
+app.mount("/static", StaticFiles(directory=static))
 
 root_html = root.joinpath("index.html").read_text(encoding="utf-8")
 route_script = scripts.joinpath("route.js").read_text(encoding="utf-8")
@@ -65,8 +67,11 @@ async def route_route(
         try:
             graph = osmnx.load_graphml(graph_path)
         except FileNotFoundError:
-            graph = osmnx.graph_from_place(place, network_type="drive")
-            osmnx.save_graphml(graph, graph_path)
+            try:
+                graph = osmnx.graph_from_place(place, network_type="drive")
+                osmnx.save_graphml(graph, graph_path)
+            except ValueError:
+                raise HTTPException(status_code=404)
 
         return gdf, graph
 
@@ -96,6 +101,7 @@ async def route_route(
                 folium.Marker(
                     location=(begin_lat, begin_lng),
                     tooltip="Source",
+                    color="blue",
                 )
             )
 
@@ -104,6 +110,7 @@ async def route_route(
                 folium.Marker(
                     location=(end_lat, end_lng),
                     tooltip="Destination",
+                    color="red",
                 )
             )
 
@@ -143,7 +150,7 @@ async def route_route(
             stdin.write(f"{u} {v}\n".encode("utf-8"))
 
         # Apply all algorithms
-        tasks: List[asyncio.Task[Tuple[bytes, bytes]]] = []
+        tasks: List[Tuple[str, asyncio.Task[Tuple[bytes, bytes]]]] = []
         for executable in build.iterdir():
             process = await asyncio.create_subprocess_exec(
                 str(executable.resolve()),
@@ -153,16 +160,16 @@ async def route_route(
             )
 
             stdin.seek(0)
-            tasks.append(asyncio.create_task(process.communicate(stdin.read())))
+            tasks.append((executable.stem, asyncio.create_task(process.communicate(stdin.read()))))
 
-        for task in tasks:
+        for tooltip, task in tasks:
             stdout, _ = await task
             route = [int(x) for x in stdout.decode("utf-8").split()]
 
             map.add_child(
                 folium.PolyLine(
                     locations=[(graph.nodes[i]["y"], graph.nodes[i]["x"]) for i in route],
-                    tooltip=executable.stem,
+                    tooltip=tooltip,
                     color=next(colors),
                     weight=4,
                 ),
