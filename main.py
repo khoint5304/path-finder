@@ -16,8 +16,9 @@ from bs4 import BeautifulSoup  # type: ignore
 from fastapi import FastAPI, Query
 from geopandas import GeoDataFrame  # type: ignore
 from osmnx import geocoder
-from fastapi.responses import HTMLResponse
+from fastapi.exceptions import HTTPException
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 from folium.elements import EventHandler, JsCode  # type: ignore
 
 
@@ -53,7 +54,10 @@ async def route_route(
     end_lng: Annotated[Optional[float], Query()] = None,
 ) -> HTMLResponse:
     def _initial_load() -> Tuple[GeoDataFrame, networkx.MultiDiGraph]:
-        gdf = geocoder.geocode_to_gdf(place)
+        try:
+            gdf = geocoder.geocode_to_gdf(place)
+        except Exception:
+            raise HTTPException(status_code=404)
 
         # Load graph from local file if possible
         osm_id = gdf["osm_id"][0]
@@ -65,17 +69,6 @@ async def route_route(
             osmnx.save_graphml(graph, graph_path)
 
         return gdf, graph
-
-    async def pre_download(url: str, *, session: aiohttp.ClientSession) -> Path:
-        target = data.joinpath(os.path.basename(url))
-        async with predownload_lock:
-            if not target.is_file():
-                async with session.get(url) as response:
-                    response.raise_for_status()
-                    with target.open("wb") as file:
-                        file.write(await response.read())
-
-        return target
 
     async with graph_lock:
         gdf, graph = await asyncio.to_thread(_initial_load)
@@ -175,16 +168,27 @@ async def route_route(
                 ),
             )
 
+    async def predownload(url: str, *, session: aiohttp.ClientSession) -> Path:
+        target = data.joinpath(os.path.basename(url))
+        async with predownload_lock:
+            if not target.is_file():
+                async with session.get(url) as response:
+                    response.raise_for_status()
+                    with target.open("wb") as file:
+                        file.write(await response.read())
+
+        return target
+
     soup = BeautifulSoup(map.get_root().render(), "html.parser")
     async with aiohttp.ClientSession() as session:
         for element in soup.find_all("script"):
             if url := element.get("src"):
-                p = await pre_download(url, session=session)
+                p = await predownload(url, session=session)
                 element["src"] = p.relative_to(root).as_posix()
 
         for element in soup.find_all("link"):
             if url := element.get("href"):
-                p = await pre_download(url, session=session)
+                p = await predownload(url, session=session)
                 element["href"] = p.relative_to(root).as_posix()
 
     return HTMLResponse(soup)
