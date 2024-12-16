@@ -28,13 +28,14 @@ build = root / "build"
 data.mkdir(parents=True, exist_ok=True)
 
 
-resource_lock = asyncio.Lock()
 app = FastAPI(title="Path finder")
 app.mount("/data", StaticFiles(directory=data))
 
-
 root_html = root.joinpath("index.html").read_text(encoding="utf-8")
 route_script = scripts.joinpath("route.js").read_text(encoding="utf-8")
+
+graph_lock = asyncio.Lock()
+predownload_lock = asyncio.Lock()
 
 
 @app.get("/")
@@ -67,7 +68,7 @@ async def route_route(
 
     async def pre_download(url: str, *, session: aiohttp.ClientSession) -> Path:
         target = data.joinpath(os.path.basename(url))
-        async with resource_lock:
+        async with predownload_lock:
             if not target.is_file():
                 async with session.get(url) as response:
                     response.raise_for_status()
@@ -76,7 +77,9 @@ async def route_route(
 
         return target
 
-    gdf, graph = await asyncio.to_thread(_initial_load)
+    async with graph_lock:
+        gdf, graph = await asyncio.to_thread(_initial_load)
+
     coordinates = [
         [gdf.bbox_south[0], gdf.bbox_west[0]],
         [gdf.bbox_north[0], gdf.bbox_east[0]],
