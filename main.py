@@ -5,6 +5,7 @@ import io
 import itertools
 import os
 import sys
+import traceback
 from pathlib import Path
 from typing import Annotated, List, Optional, Tuple
 
@@ -20,6 +21,7 @@ from fastapi.exceptions import HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from folium.elements import EventHandler, JsCode  # type: ignore
+from folium.features import CustomIcon
 
 
 root = Path(__file__).parent.resolve()
@@ -71,6 +73,7 @@ async def route_route(
                 graph = osmnx.graph_from_place(place, network_type="drive")
                 osmnx.save_graphml(graph, graph_path)
             except ValueError:
+                traceback.print_exc()
                 raise HTTPException(status_code=404)
 
         return gdf, graph
@@ -101,7 +104,14 @@ async def route_route(
                 folium.Marker(
                     location=(begin_lat, begin_lng),
                     tooltip="Source",
-                    color="blue",
+                    icon=CustomIcon(static.joinpath("marker.png").as_posix()),
+                )
+            )
+            map.add_child(
+                folium.PolyLine(
+                    locations=[(begin_lat, begin_lng), (graph.nodes[begin]["y"], graph.nodes[begin]["x"])],
+                    dash_array="10",
+                    weight=4,
                 )
             )
 
@@ -110,7 +120,14 @@ async def route_route(
                 folium.Marker(
                     location=(end_lat, end_lng),
                     tooltip="Destination",
-                    color="red",
+                    icon=CustomIcon(static.joinpath("marker.png").as_posix()),
+                )
+            )
+            map.add_child(
+                folium.PolyLine(
+                    locations=[(graph.nodes[end]["y"], graph.nodes[end]["x"]), (end_lat, end_lng)],
+                    dash_array="10",
+                    weight=4,
                 )
             )
 
