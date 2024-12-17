@@ -64,7 +64,6 @@ std::shared_ptr<search_state> a_star(
     std::shared_ptr<search_state> initial_ptr,
     const std::size_t &n,
     const std::size_t &destination,
-    const std::vector<std::pair<double, double>> &points,
     const std::vector<std::unordered_map<std::size_t, double>> &neighbors,
     const std::vector<double> &distance_to_dest,
     const std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::milliseconds> &timeout)
@@ -119,7 +118,6 @@ std::shared_ptr<search_state> dfs(
     std::shared_ptr<search_state> initial_ptr,
     const std::size_t &n,
     const std::size_t &destination,
-    const std::vector<std::pair<double, double>> &points,
     const std::vector<std::unordered_map<std::size_t, double>> &neighbors,
     const std::vector<double> &distance_to_dest,
     const std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::milliseconds> &timeout)
@@ -232,9 +230,9 @@ int main()
         std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(static_cast<std::size_t>(1000.0 * timeout)));
 
 #if defined(A_STAR)
-    result_ptr = a_star(initial_ptr, n, destination, points, neighbors, distance_to_dest, time_limit);
+    result_ptr = a_star(initial_ptr, n, destination, neighbors, distance_to_dest, time_limit);
 #elif defined(DFS)
-    result_ptr = dfs(initial_ptr, n, destination, points, neighbors, distance_to_dest, time_limit);
+    result_ptr = dfs(initial_ptr, n, destination, neighbors, distance_to_dest, time_limit);
 #else
     static_assert(false, "No search algorithm specified");
 #endif
