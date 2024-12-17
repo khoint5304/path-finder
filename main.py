@@ -56,6 +56,7 @@ async def route_route(
     begin_lng: Annotated[Optional[float], Query()] = None,
     end_lat: Annotated[Optional[float], Query()] = None,
     end_lng: Annotated[Optional[float], Query()] = None,
+    timeout: Annotated[float, Query()] = 30,
 ) -> HTMLResponse:
     def _initial_load() -> Tuple[GeoDataFrame, networkx.MultiDiGraph]:
         try:
@@ -99,38 +100,6 @@ async def route_route(
     begin = osmnx.nearest_nodes(graph, begin_lng, begin_lat) if begin_lat is not None and begin_lng is not None else None
     end = osmnx.nearest_nodes(graph, end_lng, end_lat) if end_lat is not None and end_lng is not None else None
     if begin is not None and end is not None:
-        if begin_lat is not None and begin_lng is not None:
-            map.add_child(
-                folium.Marker(
-                    location=(begin_lat, begin_lng),
-                    tooltip="Source",
-                    icon=CustomIcon(static.joinpath("marker.png").as_posix()),
-                )
-            )
-            map.add_child(
-                folium.PolyLine(
-                    locations=[(begin_lat, begin_lng), (graph.nodes[begin]["y"], graph.nodes[begin]["x"])],
-                    dash_array="10",
-                    weight=4,
-                )
-            )
-
-        if end_lat is not None and end_lng is not None:
-            map.add_child(
-                folium.Marker(
-                    location=(end_lat, end_lng),
-                    tooltip="Destination",
-                    icon=CustomIcon(static.joinpath("marker.png").as_posix()),
-                )
-            )
-            map.add_child(
-                folium.PolyLine(
-                    locations=[(graph.nodes[end]["y"], graph.nodes[end]["x"]), (end_lat, end_lng)],
-                    dash_array="10",
-                    weight=4,
-                )
-            )
-
         # Folium route colors
         colors = itertools.cycle(
             [
@@ -155,9 +124,44 @@ async def route_route(
             ],
         )
 
+        walk_color = next(colors)
+        if begin_lat is not None and begin_lng is not None:
+            map.add_child(
+                folium.Marker(
+                    location=(begin_lat, begin_lng),
+                    tooltip="Source",
+                    icon=CustomIcon(static.joinpath("marker-icon.png").as_posix()),
+                )
+            )
+            map.add_child(
+                folium.PolyLine(
+                    locations=[(begin_lat, begin_lng), (graph.nodes[begin]["y"], graph.nodes[begin]["x"])],
+                    dash_array="10",
+                    weight=4,
+                    color=walk_color,
+                )
+            )
+
+        if end_lat is not None and end_lng is not None:
+            map.add_child(
+                folium.Marker(
+                    location=(end_lat, end_lng),
+                    tooltip="Destination",
+                    icon=CustomIcon(static.joinpath("marker-icon.png").as_posix()),
+                )
+            )
+            map.add_child(
+                folium.PolyLine(
+                    locations=[(graph.nodes[end]["y"], graph.nodes[end]["x"]), (end_lat, end_lng)],
+                    dash_array="10",
+                    weight=4,
+                    color=walk_color,
+                )
+            )
+
         # Construct stdin
         stdin = io.BytesIO()
-        stdin.write(f"{graph.number_of_nodes()} {graph.number_of_edges()} {begin} {end}\n".encode("utf-8"))
+        stdin.write(f"{graph.number_of_nodes()} {graph.number_of_edges()} {begin} {end} {timeout}\n".encode("utf-8"))
         for id, node in graph.nodes(data=True):
             lng = node["x"]
             lat = node["y"]
@@ -167,7 +171,7 @@ async def route_route(
             stdin.write(f"{u} {v}\n".encode("utf-8"))
 
         # Apply all algorithms
-        tasks: List[Tuple[str, asyncio.Task[Tuple[bytes, bytes]]]] = []
+        tasks: List[Tuple[str, asyncio.subprocess.Process, asyncio.Task[Tuple[bytes, bytes]]]] = []
         for executable in build.iterdir():
             process = await asyncio.create_subprocess_exec(
                 str(executable.resolve()),
@@ -177,20 +181,21 @@ async def route_route(
             )
 
             stdin.seek(0)
-            tasks.append((executable.stem, asyncio.create_task(process.communicate(stdin.read()))))
+            tasks.append((executable.stem, process, asyncio.create_task(process.communicate(stdin.read()))))
 
-        for tooltip, task in tasks:
+        for tooltip, process, task in tasks:
             stdout, _ = await task
-            route = [int(x) for x in stdout.decode("utf-8").split()]
 
-            map.add_child(
-                folium.PolyLine(
-                    locations=[(graph.nodes[i]["y"], graph.nodes[i]["x"]) for i in route],
-                    tooltip=tooltip,
-                    color=next(colors),
-                    weight=4,
-                ),
-            )
+            if process.returncode == 0:
+                route = [int(x) for x in stdout.decode("utf-8").split()]
+                map.add_child(
+                    folium.PolyLine(
+                        locations=[(graph.nodes[i]["y"], graph.nodes[i]["x"]) for i in route],
+                        tooltip=tooltip,
+                        color=next(colors),
+                        weight=4,
+                    ),
+                )
 
     async def predownload(url: str, *, session: aiohttp.ClientSession) -> Path:
         target = data.joinpath(os.path.basename(url))

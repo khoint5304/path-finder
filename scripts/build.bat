@@ -22,6 +22,6 @@ set command=g++ %params% -D A_STAR %root%/src/main.cpp -o %root%/build/a_star.ex
 echo Running "%command%"
 %command%
 
-set command=g++ %params% -D BFS %root%/src/main.cpp -o %root%/build/bfs.exe
+set command=g++ %params% -D DFS %root%/src/main.cpp -o %root%/build/dfs.exe
 echo Running "%command%"
 %command%

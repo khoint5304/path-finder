@@ -20,6 +20,10 @@ else
 
 fi
 
-command="g++ $params $ROOT_DIR/src/main.cpp -o $ROOT_DIR/build/main.exe"
+command="g++ $params -D A_STAR $ROOT_DIR/src/main.cpp -o $ROOT_DIR/build/s_star.exe"
+echo "Running \"$command\""
+$command
+
+command="g++ $params -D DFS $ROOT_DIR/src/main.cpp -o $ROOT_DIR/build/dfs.exe"
 echo "Running \"$command\""
 $command

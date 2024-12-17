@@ -15,6 +15,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <queue>
 #include <random>
 #include <set>
 #include <string>
