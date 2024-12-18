@@ -1,9 +1,83 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Path Finder</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.png">
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .form-container {
+            text-align: center;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .progress-container {
+            display: none;
+            /* Initially hide */
+            margin-top: 20px;
+        }
+
+        .progress-spinner {
+            border: 4px solid #f3f3f3;
+            /* Light grey */
+            border-top: 4px solid #3498db;
+            /* Blue */
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
 
 <body>
+    <div class="form-container">
+        <h1>Path Finder</h1>
+        <form id="locationForm">
+            <input type="text" id="locationInput" placeholder="Enter a location" required>
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+    <div class="progress-container" id="progressContainer">
+        <div class="progress-spinner"></div>
+    </div>
     <script>
-        let place = window.prompt("Enter a location");
-        window.location.href = "/route?place=" + place;
+        document.getElementById("locationForm").addEventListener(
+            "submit",
+            function (event) {
+                event.preventDefault(); // Prevent default form submission
+                const location = document.getElementById("locationInput").value;
+
+                // Show the loading indicator
+                document.getElementById("progressContainer").style.display = "flex";
+
+                window.location.href = `/route?place=${encodeURIComponent(location)}`;
+            }
+        );
+
     </script>
 </body>
 

@@ -123,6 +123,7 @@ async def route_route(
                 "black",
             ],
         )
+        line_weight = 2
 
         walk_color = next(colors)
         if begin_lat is not None and begin_lng is not None:
@@ -137,7 +138,7 @@ async def route_route(
                 folium.PolyLine(
                     locations=[(begin_lat, begin_lng), (graph.nodes[begin]["y"], graph.nodes[begin]["x"])],
                     dash_array="10",
-                    weight=4,
+                    weight=line_weight,
                     color=walk_color,
                 )
             )
@@ -154,7 +155,7 @@ async def route_route(
                 folium.PolyLine(
                     locations=[(graph.nodes[end]["y"], graph.nodes[end]["x"]), (end_lat, end_lng)],
                     dash_array="10",
-                    weight=4,
+                    weight=line_weight,
                     color=walk_color,
                 )
             )
@@ -193,7 +194,7 @@ async def route_route(
                         locations=[(graph.nodes[i]["y"], graph.nodes[i]["x"]) for i in route],
                         tooltip=tooltip,
                         color=next(colors),
-                        weight=4,
+                        weight=line_weight,
                     ),
                 )
 
@@ -219,5 +220,12 @@ async def route_route(
             if url := element.get("href"):
                 p = await predownload(url, session=session)
                 element["href"] = p.relative_to(root).as_posix()
+
+    head = soup.find("head")
+    if head is not None:
+        title = soup.new_tag("title")
+        title.append("Routing")
+        head.append(title)
+        head.append(soup.new_tag("link", attrs={"rel": "icon", "type": "image/x-icon", "href": "/static/favicon.png"}))
 
     return HTMLResponse(soup)
