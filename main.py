@@ -105,22 +105,10 @@ async def route_route(
             [
                 "red",
                 "blue",
-                "gray",
-                "darkred",
-                "lightred",
                 "orange",
-                "beige",
                 "green",
-                "darkgreen",
-                "lightgreen",
-                "darkblue",
-                "lightblue",
                 "purple",
-                "darkpurple",
                 "pink",
-                "cadetblue",
-                "lightgray",
-                "black",
             ],
         )
         line_weight = 2
