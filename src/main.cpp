@@ -123,7 +123,7 @@ std::shared_ptr<search_state> dfs(
     const std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::milliseconds> &timeout)
 {
     std::vector<double> distances(n, std::numeric_limits<double>::infinity());
-    std::vector<std::shared_ptr<search_state>> stack = {initial_ptr};
+    std::deque<std::shared_ptr<search_state>> stack = {initial_ptr};
 
     std::shared_ptr<search_state> result_ptr;
     while (!stack.empty())
@@ -158,7 +158,7 @@ std::shared_ptr<search_state> dfs(
                         pack_ptr->distance_to_src + move,
                         distance_to_dest[neighbor]);
 
-                    stack.push_back(next_ptr);
+                    stack.push_front(next_ptr); //Queue, BFS
                 }
             }
         }
