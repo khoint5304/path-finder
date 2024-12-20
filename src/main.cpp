@@ -114,7 +114,7 @@ std::shared_ptr<search_state> a_star(
     return result_ptr;
 }
 
-std::shared_ptr<search_state> dfs(
+std::shared_ptr<search_state> bfs(
     std::shared_ptr<search_state> initial_ptr,
     const std::size_t &n,
     const std::size_t &destination,
@@ -123,7 +123,7 @@ std::shared_ptr<search_state> dfs(
     const std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::milliseconds> &timeout)
 {
     std::vector<double> distances(n, std::numeric_limits<double>::infinity());
-    std::vector<std::shared_ptr<search_state>> stack = {initial_ptr};
+    std::deque<std::shared_ptr<search_state>> stack = {initial_ptr};
 
     std::shared_ptr<search_state> result_ptr;
     while (!stack.empty())
@@ -158,7 +158,7 @@ std::shared_ptr<search_state> dfs(
                         pack_ptr->distance_to_src + move,
                         distance_to_dest[neighbor]);
 
-                    stack.push_back(next_ptr);
+                    stack.push_front(next_ptr); // Queue, BFS
                 }
             }
         }
@@ -231,8 +231,8 @@ int main()
 
 #if defined(A_STAR)
     result_ptr = a_star(initial_ptr, n, destination, neighbors, distance_to_dest, time_limit);
-#elif defined(DFS)
-    result_ptr = dfs(initial_ptr, n, destination, neighbors, distance_to_dest, time_limit);
+#elif defined(BFS)
+    result_ptr = bfs(initial_ptr, n, destination, neighbors, distance_to_dest, time_limit);
 #else
     static_assert(false, "No search algorithm specified");
 #endif
