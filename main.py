@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import functools
 import io
 import itertools
 import os
@@ -48,6 +49,29 @@ async def route_root() -> HTMLResponse:
     return HTMLResponse(root_html)
 
 
+@functools.lru_cache(maxsize=12)
+def _initial_load(place: str) -> Tuple[GeoDataFrame, networkx.MultiDiGraph]:
+    try:
+        gdf = geocoder.geocode_to_gdf(place)
+    except Exception:
+        raise HTTPException(status_code=404)
+
+    # Load graph from local file if possible
+    osm_id = gdf["osm_id"][0]
+    graph_path = data / f"{osm_id}.graphml"
+    try:
+        graph = osmnx.load_graphml(graph_path)
+    except FileNotFoundError:
+        try:
+            graph = osmnx.graph_from_place(place, network_type="drive")
+            osmnx.save_graphml(graph, graph_path)
+        except ValueError:
+            traceback.print_exc()
+            raise HTTPException(status_code=404)
+
+    return gdf, graph
+
+
 @app.get("/route")
 async def route_route(
     *,
@@ -58,29 +82,8 @@ async def route_route(
     end_lng: Annotated[Optional[float], Query()] = None,
     timeout: Annotated[float, Query()] = 30,
 ) -> HTMLResponse:
-    def _initial_load() -> Tuple[GeoDataFrame, networkx.MultiDiGraph]:
-        try:
-            gdf = geocoder.geocode_to_gdf(place)
-        except Exception:
-            raise HTTPException(status_code=404)
-
-        # Load graph from local file if possible
-        osm_id = gdf["osm_id"][0]
-        graph_path = data / f"{osm_id}.graphml"
-        try:
-            graph = osmnx.load_graphml(graph_path)
-        except FileNotFoundError:
-            try:
-                graph = osmnx.graph_from_place(place, network_type="drive")
-                osmnx.save_graphml(graph, graph_path)
-            except ValueError:
-                traceback.print_exc()
-                raise HTTPException(status_code=404)
-
-        return gdf, graph
-
     async with graph_lock:
-        gdf, graph = await asyncio.to_thread(_initial_load)
+        gdf, graph = await asyncio.to_thread(_initial_load, place)
 
     coordinates = [
         [gdf.bbox_south[0], gdf.bbox_west[0]],
