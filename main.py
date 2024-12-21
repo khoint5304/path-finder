@@ -176,14 +176,15 @@ async def route_route(
 
             if process.returncode == 0:
                 route = [int(x) for x in stdout.decode("utf-8").split()]
-                map.add_child(
-                    folium.PolyLine(
-                        locations=[(graph.nodes[i]["y"], graph.nodes[i]["x"]) for i in route],
-                        tooltip=tooltip,
-                        color=next(colors),
-                        weight=line_weight,
-                    ),
-                )
+                if len(route) > 0:
+                    map.add_child(
+                        folium.PolyLine(
+                            locations=[(graph.nodes[i]["y"], graph.nodes[i]["x"]) for i in route],
+                            tooltip=tooltip,
+                            color=next(colors),
+                            weight=line_weight,
+                        ),
+                    )
 
     async def predownload(url: str, *, session: aiohttp.ClientSession) -> Path:
         target = data.joinpath(os.path.basename(url))

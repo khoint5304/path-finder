@@ -7,7 +7,8 @@
             ],
             "cppStandard": "c++20",
             "defines": [
-                "A_STAR"
+                "A_STAR",
+                "BFS"
             ]
         }
     ]

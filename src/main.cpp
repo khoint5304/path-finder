@@ -73,7 +73,7 @@ std::shared_ptr<search_state> a_star(
     queue.push(initial_ptr);
 
     std::shared_ptr<search_state> result_ptr;
-    while (!queue.empty())
+    while (!queue.empty() && std::chrono::high_resolution_clock::now() < timeout)
     {
         auto pack_ptr = queue.top();
         queue.pop();
@@ -84,10 +84,6 @@ std::shared_ptr<search_state> a_star(
             if (pack_ptr->index == destination)
             {
                 result_ptr = pack_ptr;
-                if (std::chrono::high_resolution_clock::now() >= timeout)
-                {
-                    break;
-                }
             }
             else
             {
@@ -126,7 +122,7 @@ std::shared_ptr<search_state> bfs(
     std::deque<std::shared_ptr<search_state>> stack = {initial_ptr};
 
     std::shared_ptr<search_state> result_ptr;
-    while (!stack.empty())
+    while (!stack.empty() && std::chrono::high_resolution_clock::now() < timeout)
     {
         auto pack_ptr = stack.back();
         stack.pop_back();
@@ -137,10 +133,6 @@ std::shared_ptr<search_state> bfs(
             if (pack_ptr->index == destination)
             {
                 result_ptr = pack_ptr;
-                if (std::chrono::high_resolution_clock::now() >= timeout)
-                {
-                    break;
-                }
             }
             else
             {
@@ -243,7 +235,14 @@ int main()
 
     const auto end = std::chrono::high_resolution_clock::now();
 
-    logger << "Found route with distance = " << ptr->distance_to_src << " km (explored " << n << " vertices and " << m << " edges) after ";
+    if (ptr == nullptr)
+    {
+        logger << "No route found after ";
+    }
+    else
+    {
+        logger << "Found route with distance = " << ptr->distance_to_src << " km (explored " << n << " vertices and " << m << " edges) after ";
+    }
     logger << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " ms\n";
     std::cerr << logger.str() << std::flush;
 

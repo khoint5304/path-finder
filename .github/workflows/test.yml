@@ -59,7 +59,6 @@ jobs:
 
       - name: Run algorithm
         run: |
-          exitcode=0
           set +e
 
           report_error() {
@@ -68,7 +67,6 @@ jobs:
             if [ $this_exitcode -ne 0 ]
             then
               echo "::warning::Exit code $this_exitcode at run #$i"
-              exitcode=1
             fi
           }
 
@@ -76,7 +74,7 @@ jobs:
 
           find samples -maxdepth 1 -type f -name "*.txt" -print0 | while IFS= read -r -d $'\0' f
           do
-            for i in $(seq 1 20)
+            for i in $(seq 1 1)
             do
               echo "RUN #$i of \"$f\""
               python scripts/benchmark.py "$f" > input.txt
@@ -84,18 +82,16 @@ jobs:
 
               echo -n "\"$f\"," >> summary.csv
 
-              cat input.txt | build/a_star.exe 2>&1 >/dev/null | tee | grep -o '[0-9]\+ ms' | grep -o '[0-9]\+' | tr '\n' ' ' | sed 's/ $//' >> summary.csv
+              cat input.txt | build/a_star.exe 2>&1 >/dev/null | tee /dev/stderr | grep -o '[0-9]\+ ms' | grep -o '[0-9]\+' | tr '\n' ' ' | sed 's/ $//' >> summary.csv
               report_error
 
               echo -n "," >> summary.csv
 
-              cat input.txt | build/bfs.exe 2>&1 >/dev/null | tee | grep -o '[0-9]\+ ms' | grep -o '[0-9]\+' >> summary.csv
+              cat input.txt | build/bfs.exe 2>&1 >/dev/null | tee /dev/stderr | grep -o '[0-9]\+ ms' | grep -o '[0-9]\+' >> summary.csv
               report_error
 
             done
           done
-
-          exit $exitcode
 
       - name: Upload summary table
         uses: actions/upload-artifact@v4

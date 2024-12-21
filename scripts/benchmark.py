@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import random
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -26,6 +27,7 @@ with namespace.data.open("r", encoding="utf-8") as file:
     n, m, _, _, timeout = header.split()
     nodes = [int(tokens[0]) for tokens in map(str.split, lines[:int(n)])]
     start, end = random.sample(nodes, 2)
+    print("Selected start and end nodes:", start, end, file=sys.stderr)
 
 
 print(n, m, start, end, timeout)
