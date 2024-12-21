@@ -229,15 +229,24 @@ int main()
     const auto time_limit = std::chrono::time_point_cast<std::chrono::milliseconds>(
         std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(static_cast<std::size_t>(1000.0 * timeout)));
 
+    std::stringstream logger;
+    const auto start = std::chrono::high_resolution_clock::now();
+
 #if defined(A_STAR)
+    logger << "[A*] ";
     result_ptr = a_star(initial_ptr, n, destination, neighbors, distance_to_dest, time_limit);
 #elif defined(BFS)
+    logger << "[BFS] ";
     result_ptr = bfs(initial_ptr, n, destination, neighbors, distance_to_dest, time_limit);
 #else
     static_assert(false, "No search algorithm specified");
 #endif
 
-    std::cerr << "Found route with distance = " << result_ptr->distance_to_src << " km (explored " << n << " vertices and " << m << " edges)." << std::endl;
+    const auto end = std::chrono::high_resolution_clock::now();
+
+    logger << "Found route with distance = " << result_ptr->distance_to_src << " km (explored " << n << " vertices and " << m << " edges) after ";
+    logger << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " ms\n";
+    std::cerr << logger.str() << std::flush;
 
     std::vector<std::size_t> result;
     while (result_ptr != nullptr)
