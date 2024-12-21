@@ -84,16 +84,18 @@ jobs:
 
               echo -n "\"$f\"," >> summary.csv
 
-              cat input.txt | build/a_star.exe 2>&1 >/dev/null | grep -o '[0-9]\+ ms' | grep -o '[0-9]\+' | tr '\n' ' ' | sed 's/ $//' >> summary.csv
+              cat input.txt | build/a_star.exe 2>&1 >/dev/null | tee | grep -o '[0-9]\+ ms' | grep -o '[0-9]\+' | tr '\n' ' ' | sed 's/ $//' >> summary.csv
               report_error
 
               echo -n "," >> summary.csv
 
-              cat input.txt | build/bfs.exe 2>&1 >/dev/null | grep -o '[0-9]\+ ms' | grep -o '[0-9]\+' >> summary.csv
+              cat input.txt | build/bfs.exe 2>&1 >/dev/null | tee | grep -o '[0-9]\+ ms' | grep -o '[0-9]\+' >> summary.csv
               report_error
 
             done
           done
+
+          exit $exitcode
 
       - name: Upload summary table
         uses: actions/upload-artifact@v4
