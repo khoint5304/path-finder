@@ -76,7 +76,7 @@ jobs:
 
           find samples -maxdepth 1 -type f -name "*.txt" -print0 | while IFS= read -r -d $'\0' f
           do
-            for i in $(seq 1 10)
+            for i in $(seq 1 20)
             do
               echo "RUN #$i of \"$f\""
               python scripts/benchmark.py "$f" > input.txt

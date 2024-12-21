@@ -169,8 +169,7 @@ async def route_route(
                 stderr=sys.stderr,
             )
 
-            stdin.seek(0)
-            tasks.append((executable.stem, process, asyncio.create_task(process.communicate(stdin.read()))))
+            tasks.append((executable.stem, process, asyncio.create_task(process.communicate(stdin.getvalue()))))
 
         for tooltip, process, task in tasks:
             stdout, _ = await task
