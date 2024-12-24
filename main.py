@@ -63,7 +63,7 @@ def _initial_load(place: str) -> Tuple[GeoDataFrame, networkx.MultiDiGraph]:
         graph = osmnx.load_graphml(graph_path)
     except FileNotFoundError:
         try:
-            graph = osmnx.graph_from_place(place, network_type="drive")
+            graph = osmnx.graph_from_place(place, network_type="all")
             osmnx.save_graphml(graph, graph_path)
         except ValueError:
             traceback.print_exc()
@@ -108,10 +108,7 @@ async def route_route(
             [
                 "red",
                 "blue",
-                "orange",
-                "green",
-                "purple",
-                "pink",
+                "black",
             ],
         )
         line_weight = 2
